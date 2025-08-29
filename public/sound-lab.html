@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sound Lab</title>
+    <style>
+      :root {
+        --bg: #1a1512; --panel: #201a16; --text: #efe7db; --muted: #c7b9a6; --accent: #e08a2e; --border: #43372d;
+      }
+      html, body { height: 100%; background: var(--bg); color: var(--text); margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial; }
+      header { padding: 16px; border-bottom: 1px solid var(--border); background: var(--panel); }
+      main { padding: 16px; max-width: 650px; margin: 0 auto; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+      .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+      .card h3 { margin: 0 0 8px; font-size: 16px; }
+      .desc { color: var(--muted); font-size: 13px; margin-bottom: 10px; min-height: 34px; }
+      button { background: #2a231e; color: var(--text); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+      button:hover { background: #3a2f26; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; }
+      .sf-list { display: grid; grid-auto-rows: minmax(32px, auto); gap: 6px; margin-top: 8px; }
+      .sf-row { display: grid; grid-template-columns: 1fr auto auto auto auto; gap: 6px; align-items: center; background: var(--panel); border: 1px solid var(--border); padding: 6px 8px; border-radius: 8px; }
+      .sf-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .sf-row button { padding: 4px 8px; border-radius: 6px; }
+      code { color: var(--muted); }
+      footer { color: var(--muted); font-size: 12px; margin-top: 16px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h2 style="margin:0">Sound Lab</h2>
+      <div class="desc">Audition synths (Tone.js) and sample-based instruments (Soundfont-Player). Use headphones for best quality.</div>
+    </header>
+    <main>
+      <section>
+        <h3>Tone.js Synths</h3>
+        <div class="grid">
+          <div class="card">
+            <h3>MonoSynth</h3>
+            <div class="desc">Simple subtractive synth. Good for leads and bass.</div>
+            <div class="row">
+              <button data-tone="MonoSynth" data-note="C4">C4</button>
+              <button data-tone="MonoSynth" data-note="E4">E4</button>
+              <button data-tone="MonoSynth" data-note="G4">G4</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>AMSynth</h3>
+            <div class="desc">AM modulation for brighter, metallic timbres.</div>
+            <div class="row">
+              <button data-tone="AMSynth" data-note="C4">C4</button>
+              <button data-tone="AMSynth" data-note="E4">E4</button>
+              <button data-tone="AMSynth" data-note="G4">G4</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>FMSynth</h3>
+            <div class="desc">FM modulation; bell-like or voice-ish tones.</div>
+            <div class="row">
+              <button data-tone="FMSynth" data-note="C4">C4</button>
+              <button data-tone="FMSynth" data-note="E4">E4</button>
+              <button data-tone="FMSynth" data-note="G4">G4</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>PluckSynth</h3>
+            <div class="desc">Karplus-Strong plucked-string model.</div>
+            <div class="row">
+              <button data-tone="PluckSynth" data-note="C4">C4</button>
+              <button data-tone="PluckSynth" data-note="E4">E4</button>
+              <button data-tone="PluckSynth" data-note="G4">G4</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style="margin-top:16px">
+        <h3>Selected Instruments</h3>
+        <div class="desc">Click Remove to unselect. Each row has C4, C5, C6.</div>
+        <div id="sf-selected-list" class="sf-list"></div>
+
+        <h3 style="margin-top:12px">Other Instruments</h3>
+        <div class="desc">Click Use to add to selected. Each row has C4, C5, C6.</div>
+        <div id="sf-unselected-list" class="sf-list"></div>
+      </section>
+
+      <footer>
+        Tone.js is MIT. Soundfont-Player downloads instrument samples on demand; first play may take a moment.
+      </footer>
+    </main>
+
+    <script type="module">
+      import * as Tone from 'https://cdn.skypack.dev/tone';
+      import Soundfont from 'https://cdn.skypack.dev/soundfont-player';
+      // Ensure audio starts on first interaction (required on mobile)
+      async function ensureAudio() {
+        try { await Tone.start(); } catch {}
+        if (!window.sfCtx) {
+          try { window.sfCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch {}
+        }
+      }
+
+      // Tone.js handlers
+      const toneCache = new Map();
+      async function playTone(name, note) {
+        await ensureAudio();
+        if (!toneCache.has(name)) {
+          let synth;
+          switch (name) {
+            case 'MonoSynth': synth = new Tone.MonoSynth().toDestination(); break;
+            case 'AMSynth': synth = new Tone.AMSynth().toDestination(); break;
+            case 'FMSynth': synth = new Tone.FMSynth().toDestination(); break;
+            case 'PluckSynth': synth = new Tone.PluckSynth().toDestination(); break;
+            default: synth = new Tone.Synth().toDestination();
+          }
+          toneCache.set(name, synth);
+        }
+        const synth = toneCache.get(name);
+        synth.triggerAttackRelease(note, '8n');
+      }
+
+      // Soundfont-Player handlers
+      const sfCache = new Map();
+      async function playSf(instrumentName, note) {
+        await ensureAudio();
+        const ac = window.sfCtx;
+        if (!sfCache.has(instrumentName)) {
+          const inst = await Soundfont.instrument(ac, instrumentName, { soundfont: 'MusyngKite' });
+          sfCache.set(instrumentName, inst);
+        }
+        const inst = sfCache.get(instrumentName);
+        inst.play(note, ac.currentTime, { gain: 1.0, duration: 1.2 });
+      }
+
+      // Build compact list for all instruments
+      const SF_INSTRUMENTS = [
+        "accordion","acoustic_bass","acoustic_grand_piano","acoustic_guitar_nylon","acoustic_guitar_steel","agogo","alto_sax","applause","bagpipe","banjo","baritone_sax","bassoon","bird_tweet","blown_bottle","brass_section","breath_noise","bright_acoustic_piano","celesta","cello","choir_aahs","church_organ","clarinet","clavinet","contrabass","distortion_guitar","drawbar_organ","dulcimer","electric_bass_finger","electric_bass_pick","electric_grand_piano","electric_guitar_clean","electric_guitar_jazz","electric_guitar_muted","electric_piano_1","electric_piano_2","english_horn","fiddle","flute","french_horn","fretless_bass","fx_1_rain","fx_2_soundtrack","fx_3_crystal","fx_4_atmosphere","fx_5_brightness","fx_6_goblins","fx_7_echoes","fx_8_scifi","glockenspiel","guitar_fret_noise","guitar_harmonics","gunshot","harmonica","harpsichord","helicopter","honkytonk_piano","kalimba","koto","lead_1_square","lead_2_sawtooth","lead_3_calliope","lead_4_chiff","lead_5_charang","lead_6_voice","lead_7_fifths","lead_8_bass__lead","marimba","melodic_tom","music_box","muted_trumpet","oboe","ocarina","orchestra_hit","orchestral_harp","overdriven_guitar","pad_1_new_age","pad_2_warm","pad_3_polysynth","pad_4_choir","pad_5_bowed","pad_6_metallic","pad_7_halo","pad_8_sweep","pan_flute","percussive_organ","percussion","piccolo","pizzicato_strings","recorder","reed_organ","reverse_cymbal","rock_organ","seashore","shakuhachi","shamisen","shanai","sitar","slap_bass_1","slap_bass_2","soprano_sax","steel_drums","string_ensemble_1","string_ensemble_2","synth_bass_1","synth_bass_2","synth_brass_1","synth_brass_2","synth_choir","synth_drum","synth_strings_1","synth_strings_2","taiko_drum","tango_accordion","telephone_ring","tenor_sax","timpani","tinkle_bell","tremolo_strings","trombone","trumpet","tuba","tubular_bells","vibraphone","viola","violin","voice_oohs","whistle","woodblock","xylophone"
+      ];
+
+      const LS_KEY = 'sf_selectedInstruments';
+      function loadSelected() {
+        try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch { return []; }
+      }
+      function saveSelected(list) {
+        try { localStorage.setItem(LS_KEY, JSON.stringify(list)); } catch {}
+      }
+
+      function buildRow(name, action) {
+        const row = document.createElement('div');
+        row.className = 'sf-row';
+        const label = document.createElement('div');
+        label.className = 'name';
+        label.textContent = name;
+        const b4 = document.createElement('button'); b4.textContent = 'C4'; b4.setAttribute('data-sf', name); b4.setAttribute('data-note', 'C4');
+        const b5 = document.createElement('button'); b5.textContent = 'C5'; b5.setAttribute('data-sf', name); b5.setAttribute('data-note', 'C5');
+        const b6 = document.createElement('button'); b6.textContent = 'C6'; b6.setAttribute('data-sf', name); b6.setAttribute('data-note', 'C6');
+        let actionBtn;
+        if (action === 'use') {
+          actionBtn = document.createElement('button'); actionBtn.textContent = 'Use'; actionBtn.setAttribute('data-use', name);
+        } else {
+          actionBtn = document.createElement('button'); actionBtn.textContent = 'Remove'; actionBtn.setAttribute('data-remove', name);
+        }
+        row.append(label, b4, b5, b6, actionBtn);
+        return row;
+      }
+
+      function renderLists() {
+        const selectedArr = Array.from(new Set(loadSelected())).filter((n) => SF_INSTRUMENTS.includes(n));
+        const selectedSet = new Set(selectedArr);
+        const unselectedArr = SF_INSTRUMENTS.filter((n) => !selectedSet.has(n));
+
+        const selEl = document.getElementById('sf-selected-list');
+        const unselEl = document.getElementById('sf-unselected-list');
+        if (!selEl || !unselEl) return;
+
+        selEl.innerHTML = '';
+        unselEl.innerHTML = '';
+
+        const fragSel = document.createDocumentFragment();
+        selectedArr.forEach((name) => fragSel.appendChild(buildRow(name, 'remove')));
+        selEl.appendChild(fragSel);
+
+        const fragUnsel = document.createDocumentFragment();
+        unselectedArr.forEach((name) => fragUnsel.appendChild(buildRow(name, 'use')));
+        unselEl.appendChild(fragUnsel);
+      }
+
+      renderLists();
+
+      // Wire up buttons
+      document.addEventListener('click', (e) => {
+        const t = e.target;
+        if (t.matches('button[data-tone]')) {
+          playTone(t.getAttribute('data-tone'), t.getAttribute('data-note'));
+        }
+        if (t.matches('button[data-sf]')) {
+          playSf(t.getAttribute('data-sf'), t.getAttribute('data-note'));
+        }
+        if (t.matches('button[data-use]')) {
+          const name = t.getAttribute('data-use');
+          const list = loadSelected();
+          if (!list.includes(name)) {
+            list.push(name);
+            saveSelected(list);
+            renderLists();
+          }
+        }
+        if (t.matches('button[data-remove]')) {
+          const name = t.getAttribute('data-remove');
+          const list = loadSelected().filter((n) => n !== name);
+          saveSelected(list);
+          renderLists();
+        }
+      });
+    </script>
+  </body>
+  </html>
