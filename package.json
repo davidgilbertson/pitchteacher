@@ -1,0 +1,18 @@
+{
+  "name": "pitchteacher",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 8080",
+    "build": "vite build",
+    "preview": "npm run build && vite preview --port 8080 --strictPort",
+    "deploy": "npm run build && firebase deploy --only hosting"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

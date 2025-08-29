@@ -1,0 +1,195 @@
+:root {
+  /* Earthy palette */
+  --bg: #1a1512;             /* deep warm brown */
+  --panel: #201a16;          /* panel / header */
+  --text: #efe7db;           /* warm off-white */
+  --muted: #c7b9a6;          /* soft sand */
+  --accent: #e08a2e;         /* warm orange */
+  --accent-weak: #c47422;    /* deeper orange */
+  --danger: #cd4b2f;         /* redder orange for errors */
+  --btn: #2a231e;            /* button surface */
+  --btn-hover: #3a2f26;      /* hover surface */
+  --border: #43372d;         /* subtle brown border */
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  background: var(--bg);
+  color: var(--text);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  padding: 12px 8px;
+  background: var(--panel);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  justify-content: center; /* center the toggle row on wide screens */
+}
+
+.toolbar button {
+  margin-left: 8px;
+}
+
+button {
+  background: var(--btn);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+button:hover { background: var(--btn-hover); }
+button.primary { background: var(--accent-weak); border-color: var(--accent); }
+button.primary:hover { background: var(--accent); }
+button[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+.note-toggle {
+  display: flex;
+  gap: 4px;
+  flex: 1 1 auto;
+  flex-wrap: nowrap; /* keep on one line */
+  overflow: hidden; /* stretch/squash to fit instead of scrolling */
+  max-width: 600px; /* cap width on larger screens */
+  width: 100%;
+  margin: 0 auto; /* center inside topbar */
+}
+
+.toggle {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--btn);
+  border: 1px solid var(--border);
+  flex: 1 1 0; /* stretch/squash equally */
+  min-width: 0; /* allow shrinking to avoid overflow */
+  display: flex; /* perfectly center label */
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.toggle.active { background: #3a2516; border-color: var(--accent-weak); }
+
+main { max-width: 800px; margin: 64px auto; padding: 0 8px; }
+
+/* Make quiz area sit on page background (no card) */
+.quiz { background: transparent; border: none; border-radius: 0; padding: 20px 0; }
+
+#prompt { margin-top: 8px; }
+.quiz-controls { margin-bottom: 50px; }
+/* Center the Play button */
+.quiz-controls { display: flex; justify-content: center; }
+.quiz-controls .primary { font-size: 18px; padding: 12px 18px; min-height: 48px; min-width: 200px; }
+
+#prompt { margin: 0 0 64px; font-weight: 600; text-align: center; font-size: 18px; }
+
+.guess-buttons {
+  /* Single row that always fits available width without scrolling */
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow: hidden; /* avoid scrollbars; buttons will shrink */
+  margin-bottom: 12px;
+}
+
+.guess-buttons button {
+  border-width: 1px;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* center labels */
+  min-height: 44px; /* use small-screen height everywhere */
+}
+.guess-buttons.compact button {
+  padding: 2px; /* reduced padding when many notes */
+  font-size: 14px; /* drop ~2px from default 16px */
+}
+.guess-buttons button.btn-note.guessed-correct { border-width: 2px; border-color: var(--accent); }
+.guess-buttons button.btn-note.guessed-incorrect { border-width: 2px; border-color: var(--danger); }
+.guess-buttons button.btn-note.correct-indicator { border-width: 1px; border-color: var(--accent); }
+
+.feedback { min-height: 24px; color: var(--muted); }
+.feedback.success { color: var(--accent); }
+.feedback.error { color: var(--danger); }
+
+.overlay {
+  position: fixed; inset: 0; display: grid; place-items: center;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000; /* above sticky topbar */
+}
+.overlay.hidden { display: none; }
+.overlay-content {
+  background: var(--panel);
+  padding: 16px;
+  border-radius: 12px;
+  width: min(800px, calc(100% - 32px));
+}
+
+/* Floating Stats button bottom-right */
+.stats-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 900; /* below overlay (1000) */
+  padding: 10px 14px;
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+.overlay-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.overlay-header h3 { margin: 0; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.stat { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.stat .label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+.stat .value { margin-top: 4px; font-size: 14px; }
+
+/* Stats rows (All + per-note) */
+.stat-rows { display: grid; grid-auto-rows: minmax(20px, auto); gap: 4px; /* fixed columns for alignment */
+  --pct-col: 56px; /* width for percentage column */
+  --ratio-col: 72px; /* width for ratio column */
+}
+.stat-rows .row { display: grid; grid-template-columns: 1fr var(--pct-col) var(--ratio-col); align-items: center; gap: 10px; padding: 4px 6px; border-radius: 6px; background: rgba(255,255,255,0.02); }
+.stat-rows .row.strong { font-weight: 800; background: rgba(224,138,46,0.12); }
+.stat-rows .name { color: var(--text); }
+.stat-rows .pct { color: var(--text); font-variant-numeric: tabular-nums; text-align: right; justify-self: end; }
+.stat-rows .ratio { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; justify-self: end; }
+
+/* Mobile tweaks */
+@media (max-width: 520px) {
+  body { min-height: 100dvh; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: nowrap; }
+  .toolbar button { min-height: 40px; }
+  .stats-grid { grid-template-columns: 1fr; }
+
+  /* On phones: edge-to-edge, compact toggles */
+  .topbar { padding: 0; justify-content: stretch; }
+  .note-toggle { gap: 0; max-width: none; width: 100%; margin: 0; }
+  .toggle { padding: 30px 0; border-radius: 0; }
+
+  /* Make stats overlay scrollable under a sticky header */
+  .overlay-content {
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .overlay-header {
+    position: sticky;
+    top: 0;
+    background: var(--panel);
+    z-index: 1;
+  }
+  .stats-grid {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
