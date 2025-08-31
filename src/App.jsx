@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import pkg from '../package.json';
 
 // Terminology:
 // - Pitch class: note letter without octave (e.g., C, C#, D ...)
@@ -349,6 +348,19 @@ export default function App() {
   const stats7 = summarizeBy((item)=> item.ts >= weekAgo);
   const statsToday = summarizeBy((item)=> isSameDay(item.ts, dayStart.getTime()));
 
+  // Build date injected at build time (UTC ISO string via Vite define)
+  const buildDateStr = useMemo(() => {
+    const iso = (typeof __BUILD_TIME__ !== 'undefined') ? __BUILD_TIME__ : new Date().toISOString();
+    const d = new Date(iso);
+    const pad = (n) => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mi = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  }, []);
+
   return (
     <>
       <header className="topbar">
@@ -435,7 +447,7 @@ export default function App() {
             <div className="stat"><div className="label">All Time</div><div className="value">{renderStatBlock(statsAll)}</div></div>
           </div>
           <div className="overlay-footer">
-            <div className="app-version" aria-label="App version">v{pkg.version}</div>
+            <div className="app-version" aria-label="Build date">{buildDateStr}</div>
           </div>
         </div>
       </div>

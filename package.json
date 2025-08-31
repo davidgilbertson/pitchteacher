@@ -7,8 +7,7 @@
     "dev": "vite --port 8080",
     "build": "vite build",
     "preview": "npm run build && vite preview --port 8080 --strictPort",
-    "bump-version": "node scripts/bump-version.mjs",
-    "deploy": "npm run bump-version && npm run build && firebase deploy --only hosting"
+    "deploy": "npm run build && firebase deploy --only hosting"
   },
   "dependencies": {
     "react": "^18.3.1",
