@@ -130,6 +130,17 @@ main { max-width: 800px; margin: 64px auto; padding: 0 8px; }
   border-radius: 12px;
   width: min(800px, calc(100% - 32px));
 }
+/* Version footer inside stats modal */
+.overlay-footer {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+.app-version {
+  color: var(--muted);
+  font-size: 12px;
+  opacity: 0.9;
+}
 
 /* Floating Stats button bottom-right */
 .stats-fab {
@@ -192,4 +203,5 @@ main { max-width: 800px; margin: 64px auto; padding: 0 8px; }
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
+  .overlay-footer { padding: 10px 8px; }
 }

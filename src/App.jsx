@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import pkg from '../package.json';
 
 // Terminology:
 // - Pitch class: note letter without octave (e.g., C, C#, D ...)
@@ -432,6 +433,9 @@ export default function App() {
             <div className="stat"><div className="label">Today</div><div className="value">{renderStatBlock(statsToday)}</div></div>
             <div className="stat"><div className="label">Last 7 Days</div><div className="value">{renderStatBlock(stats7)}</div></div>
             <div className="stat"><div className="label">All Time</div><div className="value">{renderStatBlock(statsAll)}</div></div>
+          </div>
+          <div className="overlay-footer">
+            <div className="app-version" aria-label="App version">v{pkg.version}</div>
           </div>
         </div>
       </div>

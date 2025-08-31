@@ -1,12 +1,14 @@
 {
   "name": "pitchteacher",
   "private": true,
+  "version": "1",
   "type": "module",
   "scripts": {
     "dev": "vite --port 8080",
     "build": "vite build",
     "preview": "npm run build && vite preview --port 8080 --strictPort",
-    "deploy": "npm run build && firebase deploy --only hosting"
+    "bump-version": "node scripts/bump-version.mjs",
+    "deploy": "npm run bump-version && npm run build && firebase deploy --only hosting"
   },
   "dependencies": {
     "react": "^18.3.1",
