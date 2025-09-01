@@ -447,7 +447,7 @@ export default function App() {
             <div className="stat"><div className="label">All Time</div><div className="value">{renderStatBlock(statsAll)}</div></div>
           </div>
           <div className="overlay-footer">
-            <div className="app-version" aria-label="Build date">{buildDateStr}</div>
+            <div className="app-version" aria-label="Build date">Build: {buildDateStr}</div>
           </div>
         </div>
       </div>
