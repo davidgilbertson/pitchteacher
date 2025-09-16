@@ -4,9 +4,9 @@
   "version": "1",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 8080",
+    "dev": "vite --port 8082",
     "build": "vite build",
-    "preview": "npm run build && vite preview --port 8080 --strictPort",
+    "preview": "npm run build && vite preview --port 8082 --strictPort",
     "deploy": "npm run build && firebase deploy --only hosting"
   },
   "dependencies": {

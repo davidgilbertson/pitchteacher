@@ -41,6 +41,31 @@ export const INSTRUMENTS = [
   "voice_oohs",
 ];
 
+function computePeakNormalizationGain(instrument) {
+
+    let chosenGain = 1;
+    const buffers = instrument && instrument.buffers;
+    if (!buffers || typeof buffers !== "object") {
+        return chosenGain;
+    }
+    const entries = Object.values(buffers);
+    let globalPeak = 0;
+    for (const buf of entries) {
+        if (!buf) continue;
+        let peak = 0;
+        for (let ch = 0; ch < buf.numberOfChannels; ch++) {
+            const data = buf.getChannelData(ch);
+            for (let i = 0; i < data.length; i++) {
+                const a = Math.abs(data[i]);
+                if (a > peak) peak = a;
+            }
+        }
+        if (peak > globalPeak) globalPeak = peak;
+    }
+    chosenGain = globalPeak > 0 ? 1 / globalPeak : 1;
+    return chosenGain;
+}
+
 // ----- Constants -----
 // Use full 12-note set with sharps (pitch classes)
 const PITCH_CLASSES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
@@ -68,19 +93,26 @@ async function loadInstrument(instrumentName) {
   const ac = await ensureAudioCtx();
   if (!sfCache.has(instrumentName)) {
     const inst = await Soundfont.instrument(ac, instrumentName, { soundfont: 'MusyngKite' });
+    // Compute and attach a normalization gain based on peak amplitude
+    try {
+      inst._normalizationGain = computePeakNormalizationGain(inst) || 1;
+    } catch {
+      inst._normalizationGain = 1;
+    }
     sfCache.set(instrumentName, inst);
   }
-  return sfCache.get(instrumentName);
-}
-async function playNoteName(instrumentName, noteName, setIsPlaying) {
-  setIsPlaying?.(true);
-  try {
-    const inst = await loadInstrument(instrumentName);
-    const ac = await ensureAudioCtx();
-    inst.play(noteName, ac.currentTime, { gain: 1.0, duration: 1.0 });
-  } finally {
-    setIsPlaying?.(false);
+  const cached = sfCache.get(instrumentName);
+  // Ensure normalization gain exists even if this instance was cached before this change
+  if (typeof cached?._normalizationGain !== 'number') {
+    try { cached._normalizationGain = computePeakNormalizationGain(cached) || 1; } catch { cached._normalizationGain = 1; }
   }
+  return cached;
+}
+async function playNoteName(instrumentName, noteName) {
+  const inst = await loadInstrument(instrumentName);
+  const ac = await ensureAudioCtx();
+  const gain = typeof inst._normalizationGain === 'number' ? inst._normalizationGain : 1.0;
+  inst.play(noteName, ac.currentTime, { gain, duration: 1.0 });
 }
 
 // ----- Storage helpers -----
@@ -166,7 +198,6 @@ function summarizeBy(rangeFilter) {
 export default function App() {
   const [selected, setSelected] = useState(() => loadSelected());
   const [currentNote, setCurrentNote] = useState(null); // { midi, pitchClass, octave }
-  const [isPlaying, setIsPlaying] = useState(false);
   const [postGuess, setPostGuess] = useState(false);
   const [lastGuessLetter, setLastGuessLetter] = useState(null);
   const [lastGuessCorrect, setLastGuessCorrect] = useState(null);
@@ -266,13 +297,13 @@ export default function App() {
     try { playBtnRef.current?.focus({ preventScroll: true }); } catch {}
     // Choose and start prefetching the instrument for the NEXT round right away
     selectAndPrefetchNextInstrument();
-    await playNoteName(instrument, `${targetNote.pitchClass}${targetNote.octave}`, setIsPlaying);
+    await playNoteName(instrument, `${targetNote.pitchClass}${targetNote.octave}`);
   };
 
   const onReplay = async () => {
     if (!currentNote) return;
     const instrument = currentNote.instrument || pickRandom(INSTRUMENTS);
-    await playNoteName(instrument, `${currentNote.pitchClass}${currentNote.octave}`, setIsPlaying);
+    await playNoteName(instrument, `${currentNote.pitchClass}${currentNote.octave}`);
   };
 
   const recordGuess = (target, guessPitchClass) => {
@@ -406,7 +437,7 @@ export default function App() {
                     if (nearest) {
                       const instrument = currentNote.instrument || pickRandom(INSTRUMENTS);
                       lastPlayedRef.current = [...lastPlayedRef.current, nearest.midi].slice(-3);
-                      playNoteName(instrument, `${nearest.pitchClass}${nearest.octave}`, setIsPlaying);
+                      playNoteName(instrument, `${nearest.pitchClass}${nearest.octave}`);
                     }
                   }
                   onGuess(pitchClass);
@@ -416,7 +447,7 @@ export default function App() {
                   lastPlayedRef.current = [...lastPlayedRef.current, previewMidi].slice(-3);
                   const { pitchClass: pc2, octave } = pitchFromMidi(previewMidi);
                   const instrument = currentNote?.instrument || pickRandom(INSTRUMENTS);
-                  playNoteName(instrument, `${pc2}${octave}`, setIsPlaying);
+                  playNoteName(instrument, `${pc2}${octave}`);
                 }
               };
               return <button key={pitchClass} className={cls.join(' ')} onClick={onClick} disabled={disabled}>{pitchClass}</button>;
